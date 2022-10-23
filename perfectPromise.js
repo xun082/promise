@@ -228,7 +228,45 @@ class myPromise {
     });
   }
 
-  
+  static any(promises) {
+    return new myPromise((resolve, reject) => {
+      if (Array.isArray(promises)) {
+        const error = [];
+        let count = 0;
+
+        if (promises.length === 0) {
+          // 如果传入的参数是一个空的可迭代对象，则返回一个 已失败（already rejected） 状态的 Promise。
+          return reject(new AggregateError("All promises were rejected"));
+        }
+
+        promises.forEach((item) => {
+          myPromise.resolve(item).then(
+            (value) => {
+              // 只要其中的一个 promise 成功，就返回那个已经成功的 promise
+              resolve(value);
+            },
+            (reason) => {
+              count++;
+              error.push(reason);
+              count === promises.length && reject(new AggregateError(error));
+            }
+          );
+        });
+      } else {
+        return reject(new TypeError("Argument is not iterable"));
+      }
+    });
+  }
+
+  // 官方测试工具需要定义的私有方法,不关我事
+  static deferred = function () {
+    let result = {};
+    result.promise = new myPromise((resolve, reject) => {
+      result.resolve = resolve;
+      result.reject = reject;
+    });
+    return result;
+  };
 }
 
 /**
@@ -308,25 +346,15 @@ function resolvePromise(promise, x, resolve, reject) {
   }
 }
 
-// 官方测试要求需要有的,不关我事
-myPromise.deferred = function () {
-  let result = {};
-  result.promise = new myPromise((resolve, reject) => {
-    result.resolve = resolve;
-    result.reject = reject;
-  });
-  return result;
-};
-
 module.exports = myPromise;
 
-const p1 = Promise.resolve(3);
-const p2 = {
-  then: function (onFulfill, onReject) {
-    onReject("then函数");
-  },
-};
-const p3 = 42;
+// const p1 = Promise.resolve(3);
+// const p2 = {
+//   then: function (onFulfill, onReject) {
+//     onReject("then函数");
+//   },
+// };
+// const p3 = 42;
 
 // Promise.all([p1, p2, p3]).then(
 //   (result) => {
@@ -337,11 +365,27 @@ const p3 = 42;
 //   }
 // );
 
-myPromise.allSettled([p1, p2, p3]).then(
-  (res) => {
-    console.log(res);
-  },
-  (reason) => {
-    console.log(reason);
-  }
-);
+// myPromise.allSettled([p1, p2, p3]).then(
+//   (res) => {
+//     console.log(res);
+//   },
+//   (reason) => {
+//     console.log(reason);
+//   }
+// );
+
+const pErr1 = new myPromise((resolve, reject) => {
+  reject("总是失败");
+});
+
+const pErr2 = new myPromise((resolve, reject) => {
+  reject("总是失败");
+});
+
+const pErr3 = new myPromise((resolve, reject) => {
+  reject("总是失败");
+});
+
+myPromise.any([pErr1, pErr2, pErr3]).catch((e) => {
+  console.log(e);
+});
