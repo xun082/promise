@@ -193,6 +193,42 @@ class myPromise {
       }
     });
   }
+
+  static allSettled(promises) {
+    return new myPromise((resolve, reject) => {
+      if (Array.isArray(promises)) {
+        const result = [];
+        let count = 0;
+
+        if (promises.length === 0) return resolve(promises);
+
+        promises.forEach((item, index) => {
+          myPromise.resolve(item).then(
+            (value) => {
+              count++;
+              result[index] = {
+                status: "fulfilled",
+                value,
+              };
+              count === promises.length && resolve(result);
+            },
+            (reason) => {
+              count++;
+              result[index] = {
+                status: "rejected",
+                reason,
+              };
+              count === promises.length && reject(result);
+            }
+          );
+        });
+      } else {
+        return reject(new TypeError("Argument is not iterable"));
+      }
+    });
+  }
+
+  
 }
 
 /**
@@ -286,8 +322,8 @@ module.exports = myPromise;
 
 const p1 = Promise.resolve(3);
 const p2 = {
-  then: function (onFulfill) {
-    onFulfill("then函数");
+  then: function (onFulfill, onReject) {
+    onReject("then函数");
   },
 };
 const p3 = 42;
@@ -301,7 +337,7 @@ const p3 = 42;
 //   }
 // );
 
-myPromise.all([p1, p2, p3]).then(
+myPromise.allSettled([p1, p2, p3]).then(
   (res) => {
     console.log(res);
   },
