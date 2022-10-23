@@ -258,6 +258,20 @@ class myPromise {
     });
   }
 
+  static race(promises) {
+    return new myPromise((resolve, reject) => {
+      if (Array.isArray(promises)) {
+        if (promises.length > 0) {
+          promises.forEach((item) => {
+            myPromise.resolve(item).then(resolve, reject);
+          });
+        }
+      } else {
+        return reject(new TypeError("Argument is not iterable"));
+      }
+    });
+  }
+
   // 官方测试工具需要定义的私有方法,不关我事
   static deferred = function () {
     let result = {};
@@ -268,6 +282,8 @@ class myPromise {
     return result;
   };
 }
+
+// Give me a promise, I will not go anywhere, just stand here and wait for you
 
 /**
  * 对resolve()、reject() 进行改造增强 针对resolve()和reject()中不同值情况 进行处理
@@ -347,45 +363,3 @@ function resolvePromise(promise, x, resolve, reject) {
 }
 
 module.exports = myPromise;
-
-// const p1 = Promise.resolve(3);
-// const p2 = {
-//   then: function (onFulfill, onReject) {
-//     onReject("then函数");
-//   },
-// };
-// const p3 = 42;
-
-// Promise.all([p1, p2, p3]).then(
-//   (result) => {
-//     console.log("原生 all fulfilled :>> ", result);
-//   },
-//   (reason) => {
-//     console.log("原生 all rejected :>> ", reason);
-//   }
-// );
-
-// myPromise.allSettled([p1, p2, p3]).then(
-//   (res) => {
-//     console.log(res);
-//   },
-//   (reason) => {
-//     console.log(reason);
-//   }
-// );
-
-const pErr1 = new myPromise((resolve, reject) => {
-  reject("总是失败");
-});
-
-const pErr2 = new myPromise((resolve, reject) => {
-  reject("总是失败");
-});
-
-const pErr3 = new myPromise((resolve, reject) => {
-  reject("总是失败");
-});
-
-myPromise.any([pErr1, pErr2, pErr3]).catch((e) => {
-  console.log(e);
-});
